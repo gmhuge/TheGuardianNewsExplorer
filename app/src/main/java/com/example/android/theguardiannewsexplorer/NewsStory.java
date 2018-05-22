@@ -1,7 +1,5 @@
 package com.example.android.theguardiannewsexplorer;
 
-import java.util.Date;
-
 public class NewsStory {
 
     private String mTitle;

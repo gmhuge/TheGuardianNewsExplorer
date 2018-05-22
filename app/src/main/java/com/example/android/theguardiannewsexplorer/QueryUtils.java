@@ -1,22 +1,22 @@
 package com.example.android.theguardiannewsexplorer;
 
-        import android.text.TextUtils;
-        import android.util.Log;
+import android.text.TextUtils;
+import android.util.Log;
 
-        import org.json.JSONArray;
-        import org.json.JSONException;
-        import org.json.JSONObject;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-        import java.io.BufferedReader;
-        import java.io.IOException;
-        import java.io.InputStream;
-        import java.io.InputStreamReader;
-        import java.net.HttpURLConnection;
-        import java.net.MalformedURLException;
-        import java.net.URL;
-        import java.nio.charset.Charset;
-        import java.util.ArrayList;
-        import java.util.List;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class QueryUtils {
 
@@ -36,7 +36,6 @@ public final class QueryUtils {
         }
 
         List<NewsStory> news = extractFeatureFromJson(jsonResponse);
-
         return news;
     }
 
@@ -105,13 +104,10 @@ public final class QueryUtils {
         }
 
         List<NewsStory> news = new ArrayList<>();
-
         try {
 
             JSONObject baseJsonResponse = new JSONObject(newsJSON);
             JSONObject responseObject = baseJsonResponse.getJSONObject("response");
-
-
             JSONArray resultsArray = responseObject.getJSONArray("results");
 
             for (int i = 0; i < resultsArray.length(); i++) {
@@ -127,29 +123,23 @@ public final class QueryUtils {
 
                 String author = "";
 
-                for ( int j = 0; j < tagsArray.length(); j++) {
+                for (int j = 0; j < tagsArray.length(); j++) {
 
                     JSONObject tags = tagsArray.getJSONObject(j);
                     String concatName = tags.getString("webTitle");
-                    if ((j != 0) && (concatName.length() !=0)) {
+                    if ((j != 0) && (concatName.length() != 0)) {
                         author = author.concat(", ");
                     }
                     author = author.concat(concatName);
-
                 }
 
-
-
-                        NewsStory newsStory = new NewsStory(title, section, author, date, url);
-
+                NewsStory newsStory = new NewsStory(title, section, author, date, url);
                 news.add(newsStory);
             }
 
         } catch (JSONException e) {
             Log.e("QueryUtils", "Problem parsing the news JSON results", e);
         }
-
         return news;
     }
-
 }
