@@ -5,11 +5,15 @@ import android.app.LoaderManager.LoaderCallbacks;
 import android.content.Context;
 import android.content.Intent;
 import android.content.Loader;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -18,7 +22,8 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NewsActivity extends AppCompatActivity implements LoaderCallbacks<List<NewsStory>> {
+public class NewsActivity extends AppCompatActivity implements LoaderCallbacks<List<NewsStory>>,
+        SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final String LOG_TAG = NewsActivity.class.getName();
 
@@ -39,6 +44,15 @@ public class NewsActivity extends AppCompatActivity implements LoaderCallbacks<L
         newsStoryListView.setEmptyView(mEmptyStateTextView);
         mAdapter = new NewsAdapter(this, new ArrayList<NewsStory>());
         newsStoryListView.setAdapter(mAdapter);
+
+
+        // Obtain a reference to the SharedPreferences file for this app
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        // And register to be notified of preference changes
+        // So we know when the user has adjusted the query settings
+        prefs.registerOnSharedPreferenceChangeListener(this);
+
+
 
         newsStoryListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -70,8 +84,23 @@ public class NewsActivity extends AppCompatActivity implements LoaderCallbacks<L
     @Override
     public Loader<List<NewsStory>> onCreateLoader(int i, Bundle bundle) {
 
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String starRating = sharedPrefs.getString(
+                getString(R.string.settings_star_rating_key),
+                getString(R.string.settings_star_rating_default));
+
+        String orderBy = sharedPrefs.getString(
+                getString(R.string.settings_order_by_key),
+                getString(R.string.settings_order_by_default)
+        );
+
+
         Uri baseUri = Uri.parse(REQUEST_URL);
         Uri.Builder uriBuilder = baseUri.buildUpon();
+
+        uriBuilder.appendQueryParameter("star-rating", starRating);
+        uriBuilder.appendQueryParameter("order-by", orderBy);
+
         return new NewsLoader(this, uriBuilder.toString());
     }
 
@@ -94,4 +123,39 @@ public class NewsActivity extends AppCompatActivity implements LoaderCallbacks<L
     }
 
 
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
+        if (key.equals(getString(R.string.settings_star_rating_key)) ||
+                key.equals(getString(R.string.settings_order_by_key))){
+            // Clear the ListView as a new query will be kicked off
+            mAdapter.clear();
+
+            // Hide the empty state text view as the loading indicator will be displayed
+            mEmptyStateTextView.setVisibility(View.GONE);
+
+            // Show the loading indicator while new data is being fetched
+            View loadingIndicator = findViewById(R.id.loading_indicator);
+            loadingIndicator.setVisibility(View.VISIBLE);
+
+            // Restart the loader to requery the USGS as the query settings have been updated
+            getLoaderManager().restartLoader(NEWS_LOADER_ID, null, this);
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_settings) {
+            Intent settingsIntent = new Intent(this, SettingsActivity.class);
+            startActivity(settingsIntent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 }
